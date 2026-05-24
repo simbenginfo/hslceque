@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { AppScriptService } from './services/api';
 import { Question, FilterState, AdminSession, NewQuestionPayload } from './types';
-import SetupGuide from './components/SetupGuide';
-import SettingsPanel from './components/SettingsPanel';
 import StatsDashboard from './components/StatsDashboard';
 import QuestionCard from './components/QuestionCard';
 import LatexRenderer from './components/LatexRenderer';
@@ -446,32 +444,6 @@ export default function App() {
       {/* Main Body */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
 
-         {/* Global Connection Warning for Onboarding */}
-         {dbMode === 'demo' && (
-          <div className="bg-[#111] border border-[#222] rounded-sm p-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
-            <div className="flex gap-3">
-              <div className="p-2 bg-amber-500/10 text-amber-500 rounded-sm shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-sm font-serif italic text-amber-200">Interactive Demo Database Active</h4>
-                <p className="text-xs leading-relaxed text-gray-400 font-sans">
-                  We've populated several courses (Mathematics, Science, etc.) for testing. Input your Apps Script Web App URL below to instantly swap into full persistent synchronization.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                const docElement = document.getElementById('settings-block');
-                docElement?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest whitespace-nowrap self-end sm:self-center transition-all"
-            >
-              Configure Sync
-            </button>
-          </div>
-        )}
-
         {/* Stats Dashboard */}
         <StatsDashboard 
           questions={questions} 
@@ -694,6 +666,18 @@ export default function App() {
                   <div className="min-h-60 bg-[#111] border border-[#222] rounded-sm flex flex-col items-center justify-center p-10 space-y-3">
                     <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
                     <span className="text-xs text-gray-500 font-mono uppercase tracking-wider">Syncing sheets database questions stream...</span>
+                  </div>
+                ) : (filters.subject === 'all' || filters.lesson === 'all') ? (
+                  <div className="min-h-[320px] bg-[#111] border border-[#222] rounded-sm flex flex-col items-center justify-center p-12 text-center space-y-4">
+                    <div className="p-4 bg-[#0a0a0a] border border-[#222] rounded-full text-amber-500/80">
+                      <BookOpen className="w-8 h-8 animate-pulse" />
+                    </div>
+                    <div className="max-w-md space-y-2">
+                      <h4 className="text-sm font-serif italic text-amber-200">Select Subject & Lesson to Load Questions</h4>
+                      <p className="text-xs leading-relaxed text-gray-400">
+                        To maintain a clear and focused study session, please select a specific <strong className="text-amber-500 font-semibold">Subject</strong> and <strong className="text-amber-500 font-semibold">Lesson/Chapter</strong> from the criteria dropdowns above to retrieve the respective past exam questions.
+                      </p>
+                    </div>
                   </div>
                 ) : filteredAndSortedQuestions.length === 0 ? (
                   <div className="min-h-60 bg-[#111] border border-[#222] rounded-sm flex flex-col items-center justify-center p-12 text-center space-y-4">
@@ -1201,23 +1185,6 @@ export default function App() {
             )}
           </AnimatePresence>
         </div>
-
-        {/* SETUP GUIDES AND SETTINGS PANELS ROW */}
-        <section id="settings-block" className="space-y-6 pt-8 border-t border-[#222]">
-          <div className="text-left max-w-xl space-y-1">
-            <h3 className="font-serif italic text-base text-amber-50 tracking-wide">Hub Setup & Configuration</h3>
-            <p className="text-xs text-gray-500 font-sans">Expand details below to configure persistent Google Sheet synchronization or grab setup files.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SettingsPanel 
-              onConfigChange={handleConfigChange}
-              currentMode={dbMode}
-              currentUrl={webAppUrl}
-            />
-            <SetupGuide />
-          </div>
-        </section>
 
       </main>
 
