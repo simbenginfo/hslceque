@@ -1,0 +1,6 @@
+{
+  "name": "HSLC Mastery Hub",
+  "description": "A dark-themed mobile-ready question-management dashboard integrated with Google Sheets via Apps Script.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
