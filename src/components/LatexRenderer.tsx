@@ -24,6 +24,67 @@ export default function LatexRenderer({ text }: LatexRendererProps) {
   // Split by $$ to separate block math from non-block math parts
   const blockParts = preprocessed.split('$$');
 
+  // Helper to check and auto-wrap un-delimited LaTeX macros (e.g. \frac without $)
+  const autoWrapLaTeX = (inlineText: string): string => {
+    // If it already has delimiters, don't interfere
+    if (inlineText.includes('$')) {
+      return inlineText;
+    }
+    // Check if the string contains a backslash followed by characters (standard LaTeX macro pattern)
+    // or characters that indicate superscript/subscript combined with math lookups
+    const hasMacro = /\\[a-zA-Z]+/.test(inlineText);
+    if (hasMacro) {
+      return `$${inlineText}$`;
+    }
+    return inlineText;
+  };
+
+  // Helper to render inline content of a specific line/paragraph
+  const renderInlineContent = (inlineText: string, keyPrefix: string) => {
+    const wrappedText = autoWrapLaTeX(inlineText);
+    const inlineParts = wrappedText.split('$');
+    
+    return (
+      <span key={keyPrefix}>
+        {inlineParts.map((inlinePart, inlineIndex) => {
+          const isInlineMath = inlineIndex % 2 === 1;
+
+          if (isInlineMath) {
+            try {
+              // Extract formula and trim
+              const formula = inlinePart.trim();
+              if (!formula) return null;
+
+              const html = katex.renderToString(formula, {
+                displayMode: false,
+                throwOnError: false,
+              });
+              return (
+                <span
+                  key={`inline-${keyPrefix}-${inlineIndex}`}
+                  className="inline-block px-1 text-amber-200 font-semibold align-middle py-0.5"
+                  dangerouslySetInnerHTML={{ __html: html }}
+                />
+              );
+            } catch (e) {
+              return (
+                <code key={`inline-err-${keyPrefix}-${inlineIndex}`} className="px-1 text-[11px] bg-[#1a1a1a] text-rose-400 font-mono rounded-sm">
+                  {inlinePart}
+                </code>
+              );
+            }
+          } else {
+            return (
+              <span key={`text-${keyPrefix}-${inlineIndex}`}>
+                {inlinePart}
+              </span>
+            );
+          }
+        })}
+      </span>
+    );
+  };
+
   return (
     <>
       {blockParts.map((blockContent, blockIndex) => {
@@ -50,43 +111,46 @@ export default function LatexRenderer({ text }: LatexRendererProps) {
             );
           }
         } else {
-          // It's normal text containing inline math split by $
-          const inlineParts = blockContent.split('$');
-
+          // This is normal text that could contain inline math and might contain newlines/paragraphs
+          const lines = blockContent.split('\n');
+          
           return (
-            <span key={`inline-container-${blockIndex}`}>
-              {inlineParts.map((inlinePart, inlineIndex) => {
-                const isInlineMath = inlineIndex % 2 === 1;
+            <div key={`text-block-${blockIndex}`} className="inline-block w-full">
+              {lines.map((line, lineIndex) => {
+                const trimmed = line.trim();
+                
+                // If it is an empty line, render a line break/space
+                if (!trimmed) {
+                  return <div key={`empty-${blockIndex}-${lineIndex}`} className="h-2" />;
+                }
 
-                if (isInlineMath) {
-                  try {
-                    const html = katex.renderToString(inlinePart.trim(), {
-                      displayMode: false,
-                      throwOnError: false,
-                    });
-                    return (
-                      <span
-                        key={`inline-${blockIndex}-${inlineIndex}`}
-                        className="inline-block px-1 text-amber-200 align-middle py-0.5"
-                        dangerouslySetInnerHTML={{ __html: html }}
-                      />
-                    );
-                  } catch (e) {
-                    return (
-                      <code key={`inline-err-${blockIndex}-${inlineIndex}`} className="px-1 text-[11px] bg-[#1a1a1a] text-rose-400 font-mono rounded-sm">
-                        {inlinePart}
-                      </code>
-                    );
-                  }
-                } else {
+                // Check for list formatting (bullets)
+                if (trimmed.startsWith('-') || trimmed.startsWith('●') || trimmed.startsWith('*')) {
+                  const contentWithoutBullet = trimmed.substring(1).trim();
                   return (
-                    <span key={`text-${blockIndex}-${inlineIndex}`} className="whitespace-pre-wrap">
-                      {inlinePart}
-                    </span>
+                    <li key={`list-${blockIndex}-${lineIndex}`} className="ml-4 list-disc text-slate-300 py-0.5 leading-relaxed text-xs sm:text-sm font-sans">
+                      {renderInlineContent(contentWithoutBullet, `list-content-${blockIndex}-${lineIndex}`)}
+                    </li>
                   );
                 }
+
+                // Check for numbered list
+                if (trimmed.match(/^\d+\./)) {
+                  return (
+                    <div key={`numbered-${blockIndex}-${lineIndex}`} className="pl-2 py-0.5 text-slate-300 leading-relaxed text-xs sm:text-sm font-sans">
+                      {renderInlineContent(trimmed, `numbered-content-${blockIndex}-${lineIndex}`)}
+                    </div>
+                  );
+                }
+
+                // Just a normal paragraph
+                return (
+                  <p key={`p-${blockIndex}-${lineIndex}`} className="text-slate-300 leading-relaxed py-1 text-xs sm:text-sm font-sans">
+                    {renderInlineContent(trimmed, `p-content-${blockIndex}-${lineIndex}`)}
+                  </p>
+                );
               })}
-            </span>
+            </div>
           );
         }
       })}

@@ -32,37 +32,6 @@ A: ${question.answer}`;
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Convert line endings into paragraphs for neat spacing without needing a heavy parser
-  const renderText = (text: string) => {
-    return text.split('\n').map((paragraph, i) => {
-      const trimmed = paragraph.trim();
-      if (!trimmed) return <div key={i} className="h-2" />;
-      
-      // Basic formatting of lists or formulae
-      if (trimmed.startsWith('-') || trimmed.startsWith('●') || trimmed.startsWith('*')) {
-        return (
-          <li key={i} className="ml-4 list-disc text-slate-300 py-0.5 leading-relaxed">
-            <LatexRenderer text={trimmed.substring(1).trim()} />
-          </li>
-        );
-      }
-      
-      if (trimmed.match(/^\d+\./)) {
-        return (
-          <div key={i} className="pl-2 py-0.5 text-slate-300 leading-relaxed">
-            <LatexRenderer text={trimmed} />
-          </div>
-        );
-      }
-
-      return (
-        <p key={i} className="text-slate-300 leading-relaxed py-1 text-sm">
-          <LatexRenderer text={trimmed} />
-        </p>
-      );
-    });
-  };
-
   return (
     <div className="bg-[#0f0f0f] border border-[#222] rounded-sm overflow-hidden hover:border-amber-500/30 transition-all duration-200">
       {/* Card Header Area */}
@@ -199,7 +168,7 @@ A: ${question.answer}`;
             </div>
             
             <div className="space-y-1 overflow-x-auto text-gray-350 font-sans text-sm">
-              {renderText(question.answer)}
+              <LatexRenderer text={question.answer} />
             </div>
           </div>
         )}

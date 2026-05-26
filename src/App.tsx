@@ -29,37 +29,6 @@ const getBriefText = (text: string): string => {
     .replace(/\\\)/g, '$');
 };
 
-// Helper to split text by paragraph and render lists / ordinary text using LatexRenderer directly
-const renderText = (text: string) => {
-  return text.split('\n').map((paragraph, i) => {
-    const trimmed = paragraph.trim();
-    if (!trimmed) return <div key={i} className="h-2" />;
-    
-    // Basic formatting of lists or formulae
-    if (trimmed.startsWith('-') || trimmed.startsWith('●') || trimmed.startsWith('*')) {
-      return (
-        <li key={i} className="ml-4 list-disc text-slate-300 py-0.5 leading-relaxed">
-          <LatexRenderer text={trimmed.substring(1).trim()} />
-        </li>
-      );
-    }
-    
-    if (trimmed.match(/^\d+\./)) {
-      return (
-        <div key={i} className="pl-2 py-0.5 text-slate-300 leading-relaxed font-sans text-xs">
-          <LatexRenderer text={trimmed} />
-        </div>
-      );
-    }
-
-    return (
-      <p key={i} className="text-slate-300 leading-relaxed py-1 text-xs font-sans">
-        <LatexRenderer text={trimmed} />
-      </p>
-    );
-  });
-};
-
 function DeleteButtonInline({ onDelete }: { onDelete: () => void }) {
   const [confirm, setConfirm] = useState(false);
   if (confirm) {
@@ -985,7 +954,7 @@ export default function App() {
                                           <div>
                                             <span className="text-[10px] uppercase font-mono font-medium text-gray-500 block mb-1 tracking-wider">Full Exam Question:</span>
                                             <div className="text-amber-50 font-medium text-sm leading-relaxed font-sans space-y-1">
-                                              {renderText(q.question)}
+                                              <LatexRenderer text={q.question} />
                                             </div>
                                           </div>
                                           <div className="bg-[#090909] p-5 rounded-sm border border-[#222] space-y-2">
@@ -993,7 +962,7 @@ export default function App() {
                                               ✓ Standard Evaluation Answer:
                                             </span>
                                             <div className="text-gray-400 text-xs leading-relaxed font-sans space-y-1">
-                                              {renderText(q.answer)}
+                                              <LatexRenderer text={q.answer} />
                                             </div>
                                           </div>
                                         </div>
