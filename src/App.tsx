@@ -1066,8 +1066,8 @@ export default function App() {
                           {/* Marks Selection counter */}
                           <div className="space-y-1.5">
                             <label className="text-xs font-mono font-medium text-gray-405">Marks Evaluation Allocation</label>
-                            <div className="grid grid-cols-5 gap-2 font-sans">
-                              {[1, 2, 3, 4, 5].map((mk) => (
+                            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 font-sans">
+                              {[1, 2, 3, 4, 5, 6].map((mk) => (
                                 <button
                                   type="button"
                                   key={mk}
