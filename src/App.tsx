@@ -17,6 +17,48 @@ import StatsDashboard from './components/StatsDashboard';
 import QuestionCard from './components/QuestionCard';
 import LatexRenderer from './components/LatexRenderer';
 
+// Helper to transform LaTeX formula characters into a single line inline dollar format for table previews
+const getBriefText = (text: string): string => {
+  return text
+    .replace(/\n+/g, ' ')
+    .replace(/\$\$/g, '$')
+    .replace(/\\\[/g, '$')
+    .replace(/\\\]/g, '$')
+    .replace(/\\\(/g, '$')
+    .replace(/\\\)/g, '$');
+};
+
+// Helper to split text by paragraph and render lists / ordinary text using LatexRenderer directly
+const renderText = (text: string) => {
+  return text.split('\n').map((paragraph, i) => {
+    const trimmed = paragraph.trim();
+    if (!trimmed) return <div key={i} className="h-2" />;
+    
+    // Basic formatting of lists or formulae
+    if (trimmed.startsWith('-') || trimmed.startsWith('●') || trimmed.startsWith('*')) {
+      return (
+        <li key={i} className="ml-4 list-disc text-slate-300 py-0.5 leading-relaxed">
+          <LatexRenderer text={trimmed.substring(1).trim()} />
+        </li>
+      );
+    }
+    
+    if (trimmed.match(/^\d+\./)) {
+      return (
+        <div key={i} className="pl-2 py-0.5 text-slate-300 leading-relaxed font-sans text-xs">
+          <LatexRenderer text={trimmed} />
+        </div>
+      );
+    }
+
+    return (
+      <p key={i} className="text-slate-300 leading-relaxed py-1 text-xs font-sans">
+        <LatexRenderer text={trimmed} />
+      </p>
+    );
+  });
+};
+
 export default function App() {
   // Connection and Mode Configuration States
   const [dbMode, setDbMode] = useState<'live' | 'demo'>(AppScriptService.getMode());
@@ -734,9 +776,9 @@ export default function App() {
 
                                   {/* Question Brief Text */}
                                   <td className="py-4 px-4">
-                                    <p className="text-gray-400 line-clamp-1 pr-6 tracking-wide text-xs">
-                                      {q.question}
-                                    </p>
+                                    <div className="text-gray-400 line-clamp-1 pr-6 tracking-wide text-xs max-w-md xl:max-w-2xl overflow-hidden text-ellipsis whitespace-nowrap">
+                                      <LatexRenderer text={getBriefText(q.question)} />
+                                    </div>
                                   </td>
 
                                   {/* Expand Button action column */}
@@ -758,16 +800,16 @@ export default function App() {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                           <div>
                                             <span className="text-[10px] uppercase font-mono font-medium text-gray-500 block mb-1 tracking-wider">Full Exam Question:</span>
-                                            <div className="text-amber-50 font-medium text-sm leading-relaxed font-sans">
-                                              <LatexRenderer text={q.question} />
+                                            <div className="text-amber-50 font-medium text-sm leading-relaxed font-sans space-y-1">
+                                              {renderText(q.question)}
                                             </div>
                                           </div>
                                           <div className="bg-[#090909] p-5 rounded-sm border border-[#222] space-y-2">
                                             <span className="text-[10px] uppercase font-mono text-amber-500 block border-b border-[#222] pb-1 font-bold tracking-wider">
                                               ✓ Standard Evaluation Answer:
                                             </span>
-                                            <div className="text-gray-400 text-xs leading-relaxed font-sans">
-                                              <LatexRenderer text={q.answer} />
+                                            <div className="text-gray-400 text-xs leading-relaxed font-sans space-y-1">
+                                              {renderText(q.answer)}
                                             </div>
                                           </div>
                                         </div>
