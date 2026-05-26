@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Clock, Copy, Check, FileText, Share2, Award, Calendar } from 'lucide-react';
+import { ChevronDown, ChevronUp, Clock, Copy, Check, FileText, Share2, Award, Calendar, Edit3, Trash2 } from 'lucide-react';
 import { Question } from '../types';
 import LatexRenderer from './LatexRenderer';
 
@@ -12,11 +12,15 @@ interface QuestionCardProps {
   key?: any;
   question: Question;
   index: number;
+  isAdmin?: boolean;
+  onEdit?: (question: Question) => void;
+  onDelete?: (id: number) => void;
 }
 
-export default function QuestionCard({ question, index }: QuestionCardProps) {
+export default function QuestionCard({ question, index, isAdmin, onEdit, onDelete }: QuestionCardProps) {
   const [showAnswer, setShowAnswer] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const handleCopy = () => {
     const textToCopy = `Question [${question.subject} - ${question.lesson}] (${question.year}, ${question.marks} Marks):
@@ -96,14 +100,59 @@ A: ${question.answer}`;
           </div>
         </div>
 
-        {/* Copy Button */}
-        <button
-          onClick={handleCopy}
-          className="self-end md:self-start p-2 bg-[#111] hover:bg-[#1a1a1a] text-gray-400 hover:text-amber-200 rounded-sm transition-all border border-[#222] flex items-center justify-center"
-          title="Copy Question Details"
-        >
-          {copied ? <Check className="w-4 h-4 text-amber-500" /> : <Copy className="w-4 h-4" />}
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-end md:self-start">
+          {/* Copy Button */}
+          <button
+            onClick={handleCopy}
+            className="p-2 bg-[#111] hover:bg-[#1a1a1a] text-gray-400 hover:text-amber-200 rounded-sm transition-all border border-[#222] flex items-center justify-center cursor-pointer"
+            title="Copy Question Details"
+          >
+            {copied ? <Check className="w-4 h-4 text-amber-500" /> : <Copy className="w-4 h-4" />}
+          </button>
+
+          {isAdmin && (
+            <>
+              {/* Edit Button */}
+              <button
+                onClick={() => onEdit && onEdit(question)}
+                className="p-2 bg-[#111] hover:bg-[#1a1a1a] text-amber-500 hover:text-amber-400 rounded-sm transition-all border border-amber-500/20 flex items-center justify-center cursor-pointer"
+                title="Edit Question"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+
+              {/* Delete with inline confirmation */}
+              {confirmDelete ? (
+                <div className="flex items-center gap-1.5 bg-[#1c1212] border border-red-900/50 p-1 rounded-sm">
+                  <span className="text-[10px] text-red-400 font-mono px-1">Delete?</span>
+                  <button
+                    onClick={() => {
+                      if (onDelete) onDelete(question.id);
+                      setConfirmDelete(false);
+                    }}
+                    className="p-1 px-2.5 bg-red-650 hover:bg-red-500 text-white rounded-sm text-[10px] uppercase font-mono font-bold cursor-pointer"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="p-1 px-2 bg-[#1a1a1a] hover:bg-[#222] text-gray-400 rounded-sm text-[10px] uppercase font-mono cursor-pointer"
+                  >
+                    No
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="p-2 bg-[#111] hover:bg-[#1a1a1a] text-red-500 hover:text-red-400 rounded-sm transition-all border border-red-500/15 flex items-center justify-center cursor-pointer"
+                  title="Delete Question"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {/* Card Content (Question body) */}

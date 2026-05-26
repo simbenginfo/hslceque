@@ -343,4 +343,134 @@ export class AppScriptService {
     localStorage.setItem(this.STORAGE_KEY_QUESTIONS, JSON.stringify(questions));
     return newQuestion;
   }
+
+  // Edit/Update question
+  static async editQuestion(token: string, id: number, payload: NewQuestionPayload): Promise<Question> {
+    const mode = this.getMode();
+    if (mode === 'live') {
+      try {
+        const url = this.getWebAppUrl();
+        const response = await fetch(url, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'update',
+            token,
+            id,
+            ...payload
+          })
+        });
+        const json = await response.json();
+        if (json.success && json.data) {
+          const q = json.data;
+          return {
+            id: Number(q[0] || id),
+            subject: String(q[1] || payload.subject),
+            lesson: String(q[2] || payload.lesson),
+            marks: Number(q[3] || payload.marks),
+            year: Number(q[4] || payload.year),
+            question: String(q[5] || payload.question),
+            answer: String(q[6] || payload.answer),
+            createdAt: String(q[7] || new Date().toISOString())
+          };
+        }
+        
+        // Fallback retry with action: 'edit' in case that is defined in the Apps Script
+        const responseEdit = await fetch(url, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'edit',
+            token,
+            id,
+            ...payload
+          })
+        });
+        const jsonEdit = await responseEdit.json();
+        if (jsonEdit.success && jsonEdit.data) {
+          const q = jsonEdit.data;
+          return {
+            id: Number(q[0] || id),
+            subject: String(q[1] || payload.subject),
+            lesson: String(q[2] || payload.lesson),
+            marks: Number(q[3] || payload.marks),
+            year: Number(q[4] || payload.year),
+            question: String(q[5] || payload.question),
+            answer: String(q[6] || payload.answer),
+            createdAt: String(q[7] || new Date().toISOString())
+          };
+        }
+        throw new Error(json.error || jsonEdit.error || 'Failed to update question in Sheets');
+      } catch (err: any) {
+        console.error('AppScript Edit Question Error:', err);
+        throw new Error(err.message || 'Error occurred while saving updated question to Google Sheet.');
+      }
+    }
+
+    // Local Storage Mode
+    this.initializeLocalData();
+    const questions: Question[] = JSON.parse(localStorage.getItem(this.STORAGE_KEY_QUESTIONS) || '[]');
+    const index = questions.findIndex(q => q.id === id);
+    if (index === -1) {
+      throw new Error('Question not found');
+    }
+
+    // Add custom lesson/subject dynamically to local storage subject schema if new
+    const subjectsMap = JSON.parse(localStorage.getItem(this.STORAGE_KEY_SUBJECTS) || '{}');
+    if (!subjectsMap[payload.subject]) {
+      subjectsMap[payload.subject] = [];
+    }
+    if (!subjectsMap[payload.subject].includes(payload.lesson)) {
+      subjectsMap[payload.subject].push(payload.lesson);
+      localStorage.setItem(this.STORAGE_KEY_SUBJECTS, JSON.stringify(subjectsMap));
+    }
+
+    const updatedQuestion: Question = {
+      ...questions[index],
+      subject: payload.subject,
+      lesson: payload.lesson,
+      marks: Number(payload.marks),
+      year: Number(payload.year),
+      question: payload.question,
+      answer: payload.answer
+    };
+
+    questions[index] = updatedQuestion;
+    localStorage.setItem(this.STORAGE_KEY_QUESTIONS, JSON.stringify(questions));
+    return updatedQuestion;
+  }
+
+  // Delete question
+  static async deleteQuestion(token: string, id: number): Promise<boolean> {
+    const mode = this.getMode();
+    if (mode === 'live') {
+      try {
+        const url = this.getWebAppUrl();
+        const response = await fetch(url, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'delete',
+            token,
+            id
+          })
+        });
+        const json = await response.json();
+        if (json.success) {
+          return true;
+        }
+        throw new Error(json.error || 'Failed to delete question from Sheets');
+      } catch (err: any) {
+        console.error('AppScript Delete Question Error:', err);
+        throw new Error(err.message || 'Error occurred while deleting question from Google Sheet.');
+      }
+    }
+
+    // Local Storage Mode
+    this.initializeLocalData();
+    const questions: Question[] = JSON.parse(localStorage.getItem(this.STORAGE_KEY_QUESTIONS) || '[]');
+    const filtered = questions.filter(q => q.id !== id);
+    if (filtered.length === questions.length) {
+      throw new Error('Question not found');
+    }
+    localStorage.setItem(this.STORAGE_KEY_QUESTIONS, JSON.stringify(filtered));
+    return true;
+  }
 }

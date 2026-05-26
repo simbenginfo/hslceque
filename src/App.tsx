@@ -9,7 +9,8 @@ import {
   BookOpen, Search, Filter, SortAsc, SortDesc, Calendar, Award, 
   Layers, Download, PlusCircle, LogIn, LogOut, CheckCircle2, 
   X, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal, 
-  HelpCircle, Sparkles, Plus, AlertCircle, FileSpreadsheet, Eye
+  HelpCircle, Sparkles, Plus, AlertCircle, FileSpreadsheet, Eye,
+  Edit3, Trash2, Check
 } from 'lucide-react';
 import { AppScriptService } from './services/api';
 import { Question, FilterState, AdminSession, NewQuestionPayload } from './types';
@@ -59,6 +60,38 @@ const renderText = (text: string) => {
   });
 };
 
+function DeleteButtonInline({ onDelete }: { onDelete: () => void }) {
+  const [confirm, setConfirm] = useState(false);
+  if (confirm) {
+    return (
+      <div className="flex items-center gap-1 bg-[#1a1111] border border-red-900/40 p-0.5 rounded-sm">
+        <span className="text-[9px] text-red-400 font-mono px-0.5">Sure?</span>
+        <button
+          onClick={onDelete}
+          className="p-0.5 px-1.5 bg-red-600 hover:bg-red-500 text-white rounded-sm text-[9px] uppercase font-mono font-bold cursor-pointer"
+        >
+          Yes
+        </button>
+        <button
+          onClick={() => setConfirm(false)}
+          className="p-0.5 px-1 bg-gray-800 hover:bg-gray-700 text-gray-400 rounded-sm text-[9px] uppercase font-mono cursor-pointer"
+        >
+          No
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={() => setConfirm(true)}
+      className="p-1.5 hover:bg-[#1a1a1a] rounded-sm text-red-500 hover:text-red-400 border border-red-500/10 flex items-center justify-center transition-colors cursor-pointer"
+      title="Delete Question"
+    >
+      <Trash2 className="w-3.5 h-3.5" />
+    </button>
+  );
+}
+
 export default function App() {
   // Connection and Mode Configuration States
   const [dbMode, setDbMode] = useState<'live' | 'demo'>(AppScriptService.getMode());
@@ -90,6 +123,7 @@ export default function App() {
 
   // Authentication status
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -232,6 +266,138 @@ export default function App() {
   const handleLogout = () => {
     setAdminSession(null);
     localStorage.removeItem('hslc_hub_admin_session');
+    setEditingQuestion(null);
+  };
+
+  // Close and reset admin modal states
+  const handleCloseAdminModal = () => {
+    setIsAdminModalOpen(false);
+    setEditingQuestion(null);
+    setNewQuestionPayload({
+      subject: '',
+      lesson: '',
+      marks: 4,
+      year: 2026,
+      question: '',
+      answer: ''
+    });
+    setNewSubject('');
+    setNewLesson('');
+    setIsAddingCustomSubject(false);
+    setIsAddingCustomLesson(false);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+  };
+
+  // Prefill and open editor for a question
+  const startEditingQuestion = (q: Question) => {
+    setEditingQuestion(q);
+    setNewQuestionPayload({
+      subject: q.subject,
+      lesson: q.lesson,
+      marks: q.marks,
+      year: q.year,
+      question: q.question,
+      answer: q.answer
+    });
+    setNewSubject(q.subject);
+    setNewLesson(q.lesson);
+    setIsAddingCustomSubject(false);
+    setIsAddingCustomLesson(false);
+    setIsAdminModalOpen(true);
+  };
+
+  // Handle delete question action
+  const handleDeleteQuestion = async (id: number) => {
+    if (!adminSession?.token) {
+      setErrorText('Unauthorized session. Please log in.');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      await AppScriptService.deleteQuestion(adminSession.token, id);
+      setQuestions(prev => prev.filter(q => q.id !== id));
+      if (expandedRowId === id) {
+        setExpandedRowId(null);
+      }
+    } catch (err: any) {
+      console.error('Failed to delete question:', err);
+      setErrorText(err.message || 'Failed to delete question.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Save modified question details
+  const handleEditQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminSession?.token || !editingQuestion) {
+      setSubmitError('Unauthorized session.');
+      return;
+    }
+
+    const finalSubject = isAddingCustomSubject ? newSubject.trim() : newQuestionPayload.subject;
+    const finalLesson = isAddingCustomLesson ? newLesson.trim() : newQuestionPayload.lesson;
+
+    if (!finalSubject) {
+      setSubmitError('Please specify or select a valid Subject.');
+      return;
+    }
+    if (!finalLesson) {
+      setSubmitError('Please specify or select a valid Lesson.');
+      return;
+    }
+    if (!newQuestionPayload.question.trim()) {
+      setSubmitError('Question body cannot be empty.');
+      return;
+    }
+    if (!newQuestionPayload.answer.trim()) {
+      setSubmitError('Answer body cannot be empty.');
+      return;
+    }
+
+    setIsSubmittingQuestion(true);
+    setSubmitError(null);
+    setSubmitSuccess(null);
+
+    try {
+      const activePayload: NewQuestionPayload = {
+        subject: finalSubject,
+        lesson: finalLesson,
+        marks: Number(newQuestionPayload.marks),
+        year: Number(newQuestionPayload.year),
+        question: newQuestionPayload.question.trim(),
+        answer: newQuestionPayload.answer.trim()
+      };
+
+      const updated = await AppScriptService.editQuestion(adminSession.token, editingQuestion.id, activePayload);
+
+      // Update in our synced list
+      setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? updated : q));
+
+      setSubmitSuccess(`Question #${editingQuestion.id} was successfully saved and synced!`);
+      
+      // Auto close and clear on successful saving
+      setTimeout(() => {
+        handleCloseAdminModal();
+      }, 1500);
+
+    } catch (err: any) {
+      console.error('Failed to save edit:', err);
+      setSubmitError(err.message || 'Failed to save question edits.');
+    } finally {
+      setIsSubmittingQuestion(false);
+    }
+  };
+
+  // Central Router for Form Submits: Adds or Edits appropriately
+  const handleSubmitQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingQuestion) {
+      await handleEditQuestion(e);
+    } else {
+      await handleAddQuestion(e);
+    }
   };
 
   // Submit questions
@@ -782,13 +948,31 @@ export default function App() {
                                   </td>
 
                                   {/* Expand Button action column */}
-                                  <td className="py-4 px-6 text-right">
-                                    <button 
-                                      className="p-1.5 hover:bg-[#1a1a1a] rounded-sm text-amber-500 hover:text-amber-405 flex items-center gap-1 ml-auto transition-colors"
-                                    >
-                                      <Eye className="w-3.5 h-3.5" />
-                                      <span className="text-[10px] font-mono leading-none">{isExpanded ? 'Collapse' : 'Reveal'}</span>
-                                    </button>
+                                  <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex items-center gap-2.5 justify-end">
+                                      <button 
+                                        onClick={() => setExpandedRowId(isExpanded ? null : q.id)}
+                                        className="p-1.5 hover:bg-[#1a1a1a] rounded-sm text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors cursor-pointer"
+                                        title={isExpanded ? 'Collapse Solution' : 'Reveal Solution'}
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span className="text-[10px] font-mono leading-none">{isExpanded ? 'Hide' : 'Reveal'}</span>
+                                      </button>
+
+                                      {adminSession && (
+                                        <>
+                                          <button
+                                            onClick={() => startEditingQuestion(q)}
+                                            className="p-1.5 hover:bg-[#1a1a1a] rounded-sm text-blue-400 hover:text-blue-300 border border-blue-500/20 flex items-center justify-center transition-colors cursor-pointer"
+                                            title="Edit Question"
+                                          >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                          </button>
+                                          
+                                          <DeleteButtonInline onDelete={() => handleDeleteQuestion(q.id)} />
+                                        </>
+                                      )}
+                                    </div>
                                   </td>
                                 </tr>
 
@@ -831,6 +1015,9 @@ export default function App() {
                           key={q.id} 
                           question={q} 
                           index={idx} 
+                          isAdmin={!!adminSession}
+                          onEdit={startEditingQuestion}
+                          onDelete={handleDeleteQuestion}
                         />
                       ))}
                     </div>
@@ -962,15 +1149,19 @@ export default function App() {
                     <div className="lg:col-span-7 bg-[#111] border border-[#222] rounded-sm p-6 space-y-5">
                       <div className="flex items-center justify-between border-b border-[#222] pb-3">
                         <div>
-                          <h3 className="font-serif italic text-base text-amber-50 tracking-wide">Feed Exam Question</h3>
-                          <p className="text-xs text-gray-400 font-sans">Fill standard criteria to record a new sheet row.</p>
+                          <h3 className="font-serif italic text-base text-amber-50 tracking-wide">
+                            {editingQuestion ? `Edit Question #${editingQuestion.id}` : 'Feed Exam Question'}
+                          </h3>
+                          <p className="text-xs text-gray-400 font-sans">
+                            {editingQuestion ? 'Modify and update the details of this question.' : 'Fill standard criteria to record a new sheet row.'}
+                          </p>
                         </div>
                         <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 font-mono text-[10px] font-semibold tracking-wider uppercase rounded-sm flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> Authorized
                         </span>
                       </div>
 
-                      <form onSubmit={handleAddQuestion} className="space-y-4">
+                      <form onSubmit={handleSubmitQuestion} className="space-y-4">
                         
                         {/* Subject Selector row fields */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1148,10 +1339,10 @@ export default function App() {
                         <button
                           type="submit"
                           disabled={isSubmittingQuestion}
-                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md"
+                          className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                         >
-                          {isSubmittingQuestion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                          <span>Record Question to Google Sheet</span>
+                          {isSubmittingQuestion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : (editingQuestion ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />)}
+                          <span>{editingQuestion ? 'Save Question Edits' : 'Record Question to Google Sheet'}</span>
                         </button>
 
                       </form>
@@ -1199,8 +1390,8 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsAdminModalOpen(false)}
-              className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+              onClick={handleCloseAdminModal}
+              className="absolute inset-0 bg-black/85 backdrop-blur-sm shadow-xl"
             />
 
             {/* Modal Body Container */}
@@ -1214,15 +1405,23 @@ export default function App() {
               {/* Modal Banner Header */}
               <div className="flex items-center justify-between border-b border-[#222] pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 bg-amber-500 rounded-sm flex items-center justify-center text-black font-bold font-sans">A</div>
+                  <div className="h-9 w-9 bg-amber-500 rounded-sm flex items-center justify-center text-black font-bold font-sans">
+                    {editingQuestion ? 'E' : 'A'}
+                  </div>
                   <div>
-                    <h3 className="font-serif italic text-base sm:text-lg text-amber-50 tracking-wide font-medium">HSLC Administrative Board Portal</h3>
-                    <p className="text-xs text-gray-400 font-sans">Feed new curricula, test keys and parameters directly to the synced spreadsheet</p>
+                    <h3 className="font-serif italic text-base sm:text-lg text-amber-50 tracking-wide font-medium">
+                      {editingQuestion ? `HSLC Administrative Board Portal — Edit Question #${editingQuestion.id}` : 'HSLC Administrative Board Portal'}
+                    </h3>
+                    <p className="text-xs text-gray-400 font-sans">
+                      {editingQuestion 
+                        ? 'Modify question details and standard explanation parameters, then save to update' 
+                        : 'Feed new curricula, test keys and parameters directly to the synced database'}
+                    </p>
                   </div>
                 </div>
                 
                 <button
-                  onClick={() => setIsAdminModalOpen(false)}
+                  onClick={handleCloseAdminModal}
                   className="p-1.5 bg-[#161616] hover:bg-[#202020] text-gray-400 hover:text-amber-50 rounded-sm border border-[#222] transition-colors flex items-center justify-center cursor-pointer"
                   title="Close dashboard"
                 >
@@ -1297,15 +1496,19 @@ export default function App() {
                   <div className="lg:col-span-12 xl:col-span-7 bg-[#111] border border-[#222] rounded-sm p-4 sm:p-6 space-y-5">
                     <div className="flex items-center justify-between border-b border-[#222] pb-3">
                       <div>
-                        <h4 className="font-serif italic text-base text-amber-50 tracking-wide">Record New Question</h4>
-                        <p className="text-xs text-gray-400 font-sans">Fill standard criteria to record a new sheet row.</p>
+                        <h4 className="font-serif italic text-base text-amber-50 tracking-wide">
+                          {editingQuestion ? `Modify Question #${editingQuestion.id}` : 'Record New Question'}
+                        </h4>
+                        <p className="text-xs text-gray-400 font-sans">
+                          {editingQuestion ? 'Fine-tune criteria steps and formulas.' : 'Fill standard criteria to record a new sheet row.'}
+                        </p>
                       </div>
                       <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 font-mono text-[10px] font-semibold tracking-wider uppercase rounded-sm flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> Authorized
                       </span>
                     </div>
 
-                    <form onSubmit={handleAddQuestion} className="space-y-4">
+                    <form onSubmit={handleSubmitQuestion} className="space-y-4">
                       
                       {/* Subject Selector row fields */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1485,8 +1688,8 @@ export default function App() {
                         disabled={isSubmittingQuestion}
                         className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
                       >
-                        {isSubmittingQuestion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                        <span>Record Question to Google Sheet</span>
+                        {isSubmittingQuestion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : (editingQuestion ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />)}
+                        <span>{editingQuestion ? 'Save Question Edits' : 'Record Question to Google Sheet'}</span>
                       </button>
 
                     </form>
