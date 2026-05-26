@@ -43,8 +43,8 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Interface tabs state: 'browse' | 'admin'
-  const [activeTab, setActiveTab] = useState<'browse' | 'admin'>('browse');
+  // Admin entry modal visibility state
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Authentication status
   const [adminSession, setAdminSession] = useState<AdminSession | null>(null);
@@ -420,6 +420,13 @@ export default function App() {
                   Hello, <strong className="text-amber-100">{adminSession.username}</strong>
                 </span>
                 <button
+                  onClick={() => setIsAdminModalOpen(true)}
+                  className="px-3 py-1.5 border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black transition-all rounded-sm text-xs uppercase tracking-widest font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Feed Question
+                </button>
+                <button
                   onClick={handleLogout}
                   className="px-3 py-1.5 bg-[#161616] border border-[#222] hover:bg-[#202020] hover:text-amber-50 text-gray-300 text-xs rounded-sm flex items-center gap-1.5 transition-colors font-sans uppercase tracking-[0.1em]"
                 >
@@ -429,8 +436,8 @@ export default function App() {
               </div>
             ) : (
               <button
-                onClick={() => setActiveTab('admin')}
-                className="px-4 py-2 border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black transition-all rounded-sm text-xs uppercase tracking-widest font-semibold"
+                onClick={() => setIsAdminModalOpen(true)}
+                className="px-4 py-2 border border-amber-500/30 bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-black transition-all rounded-sm text-xs uppercase tracking-widest font-semibold flex items-center gap-1.5"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Admin Panel
@@ -450,52 +457,18 @@ export default function App() {
           subjects={subjectsList} 
         />
 
-        {/* Primary View Navigation Tabs */}
-        <div className="border-b border-[#222] flex items-center justify-between">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab('browse')}
-              className={`pb-3 text-sm font-semibold border-b-2 transition-all relative uppercase tracking-wider ${
-                activeTab === 'browse' 
-                  ? 'border-amber-500 text-amber-50' 
-                  : 'border-transparent text-gray-500 hover:text-amber-200'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4" />
-                <span>Question Explorer</span>
-                <span className="ml-1 px-1.5 py-0.2 bg-[#111] border border-[#222] text-[10px] rounded-sm font-mono text-amber-500">
-                  {filteredAndSortedQuestions.length}
-                </span>
-              </div>
-              {activeTab === 'browse' && (
-                <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={`pb-3 text-sm font-semibold border-b-2 transition-all relative uppercase tracking-wider ${
-                activeTab === 'admin' 
-                  ? 'border-amber-500 text-amber-50' 
-                  : 'border-transparent text-gray-500 hover:text-amber-250'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <PlusCircle className="w-4 h-4" />
-                <span>Admin Feed Panel</span>
-                {adminSession && (
-                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse" />
-                )}
-              </div>
-              {activeTab === 'admin' && (
-                <motion.div layoutId="activeTabIndicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500" />
-              )}
-            </button>
+        {/* Question Explorer Header Section */}
+        <div className="border-b border-[#222] flex items-center justify-between pb-3">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-amber-500" />
+            <h2 className="text-base font-serif italic text-amber-50 tracking-wide uppercase">Question Explorer</h2>
+            <span className="ml-2 px-2 py-0.5 bg-[#111] border border-[#222] text-xs rounded-sm font-mono text-amber-500">
+              {filteredAndSortedQuestions.length} {filteredAndSortedQuestions.length === 1 ? 'Question' : 'Questions'}
+            </span>
           </div>
 
           {/* Core Export Actions directly available */}
-          <div className="flex items-center gap-2 pb-2">
+          <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500 font-mono mr-1 hidden md:inline uppercase tracking-wider">Export Visible:</span>
             <button
               onClick={handleExportCSV}
@@ -518,20 +491,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* Tab Switch Canvas */}
+        {/* Dynamic Question Explorer Layout */}
         <div className="space-y-6">
-          <AnimatePresence mode="wait">
-            
-            {/* TAB: BROWSE */}
-            {activeTab === 'browse' && (
-              <motion.div
-                key="browse"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-6"
-              >
+          <div className="space-y-6">
                 
                 {/* Advanced Multi-filtering Suite */}
                 <div className="bg-[#111] border border-[#222] p-5 rounded-sm space-y-4">
@@ -879,11 +841,11 @@ export default function App() {
                   </div>
                 )}
 
-              </motion.div>
-            )}
+          </div>
+        </div>
 
-            {/* TAB: ADMIN WORKSPACE */}
-            {activeTab === 'admin' && (
+        {/* Dynamic Admin workspace deactivated for overlay modal */}
+        {false && (
               <motion.div
                 key="admin"
                 initial={{ opacity: 0, y: 10 }}
@@ -1183,10 +1145,342 @@ export default function App() {
 
               </motion.div>
             )}
-          </AnimatePresence>
-        </div>
 
       </main>
+
+      {/* State-of-the-art Admin Portal Modal */}
+      <AnimatePresence>
+        {isAdminModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Ambient Dark Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAdminModalOpen(false)}
+              className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+            />
+
+            {/* Modal Body Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-full max-w-5xl bg-[#0f0f0f] border border-[#222] rounded-sm p-6 sm:p-8 overflow-hidden z-10 max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col gap-6"
+            >
+              {/* Modal Banner Header */}
+              <div className="flex items-center justify-between border-b border-[#222] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 bg-amber-500 rounded-sm flex items-center justify-center text-black font-bold font-sans">A</div>
+                  <div>
+                    <h3 className="font-serif italic text-base sm:text-lg text-amber-50 tracking-wide font-medium">HSLC Administrative Board Portal</h3>
+                    <p className="text-xs text-gray-400 font-sans">Feed new curricula, test keys and parameters directly to the synced spreadsheet</p>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={() => setIsAdminModalOpen(false)}
+                  className="p-1.5 bg-[#161616] hover:bg-[#202020] text-gray-400 hover:text-amber-50 rounded-sm border border-[#222] transition-colors flex items-center justify-center cursor-pointer"
+                  title="Close dashboard"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Authentication Status Router inside the Modal */}
+              {!adminSession ? (
+                /* LOGIN FORM IN THE MODAL */
+                <div className="max-w-md mx-auto w-full py-6 space-y-6 text-center">
+                  <div className="mx-auto h-12 w-12 rounded-sm bg-amber-500/10 border border-amber-450/20 flex items-center justify-center text-amber-500">
+                    <LogIn className="w-6 h-6" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-semibold text-amber-50 uppercase tracking-widest font-mono">Verification Required</h4>
+                    <p className="text-xs text-gray-400 font-sans">Authorized admins must enter credentials linked with the master sheet.</p>
+                  </div>
+
+                  <form onSubmit={handleLogin} className="space-y-4 text-left font-sans">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono text-gray-500 uppercase tracking-wider">Username</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. admin"
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
+                        className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-gray-200 placeholder-gray-650 focus:outline-none focus:border-amber-500"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-mono text-gray-500 uppercase tracking-wider">Password</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-gray-200 placeholder-gray-655 focus:outline-none focus:border-amber-500"
+                        required
+                      />
+                    </div>
+
+                    {loginError && (
+                      <div className="p-3 bg-rose-950/20 border border-rose-900/50 text-rose-300 text-xs rounded-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0" />
+                        <span>{loginError}</span>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isLoggingIn}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                    >
+                      {isLoggingIn ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <LogIn className="w-3.5 h-3.5" />}
+                      <span>Verify Session</span>
+                    </button>
+                  </form>
+
+                  <div className="pt-4 border-t border-[#222] text-left bg-[#0c0c0c] p-4 rounded-sm text-[11px] text-gray-500 font-sans italic leading-relaxed">
+                    *Note: If using Live Mode, credentials must match rows entered under the 'admins' Google sheet tab!
+                  </div>
+                </div>
+              ) : (
+                /* FEED QUESTION FORM IN THE MODAL */
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-4">
+                  
+                  {/* LEFT COLUMN: THE FORM */}
+                  <div className="lg:col-span-12 xl:col-span-7 bg-[#111] border border-[#222] rounded-sm p-4 sm:p-6 space-y-5">
+                    <div className="flex items-center justify-between border-b border-[#222] pb-3">
+                      <div>
+                        <h4 className="font-serif italic text-base text-amber-50 tracking-wide">Record New Question</h4>
+                        <p className="text-xs text-gray-400 font-sans">Fill standard criteria to record a new sheet row.</p>
+                      </div>
+                      <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 font-mono text-[10px] font-semibold tracking-wider uppercase rounded-sm flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-500" /> Authorized
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleAddQuestion} className="space-y-4">
+                      
+                      {/* Subject Selector row fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* Choose or Custom Subject toggle */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-mono font-medium text-gray-400">Subject</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingCustomSubject(!isAddingCustomSubject);
+                                setNewQuestionPayload(p => ({ ...p, subject: '' }));
+                              }}
+                              className="text-[10px] text-amber-500 hover:text-amber-444 font-mono underline cursor-pointer"
+                            >
+                              {isAddingCustomSubject ? 'Select Existing' : '+ Add Custom'}
+                            </button>
+                          </div>
+
+                          {isAddingCustomSubject ? (
+                            <input
+                              type="text"
+                              placeholder="Enter custom subject (e.g. History)"
+                              value={newSubject}
+                              onChange={(e) => {
+                                setNewSubject(e.target.value);
+                                setNewQuestionPayload(p => ({ ...p, subject: e.target.value }));
+                              }}
+                              className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-amber-50 placeholder-gray-650 focus:outline-none focus:border-amber-500"
+                              required
+                            />
+                          ) : (
+                            <select
+                              value={newQuestionPayload.subject}
+                              onChange={(e) => setNewQuestionPayload(p => ({ ...p, subject: e.target.value, lesson: '' }))}
+                              className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-gray-300 focus:outline-none focus:border-amber-505 cursor-pointer"
+                              required
+                            >
+                              <option value="">-- Choose Subject --</option>
+                              {subjectsList.map((subj, index) => (
+                                <option key={index} value={subj}>{subj}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Choose or Custom Lesson toggle */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-mono font-medium text-gray-400">Lesson / Chapter</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsAddingCustomLesson(!isAddingCustomLesson);
+                                setNewQuestionPayload(p => ({ ...p, lesson: '' }));
+                              }}
+                              className="text-[10px] text-amber-500 hover:text-amber-444 font-mono underline cursor-pointer"
+                            >
+                              {isAddingCustomLesson ? 'Select Existing' : '+ Add Custom'}
+                            </button>
+                          </div>
+
+                          {isAddingCustomLesson ? (
+                            <input
+                              type="text"
+                              placeholder="Enter custom lesson/unit name"
+                              value={newLesson}
+                              onChange={(e) => {
+                                setNewLesson(e.target.value);
+                                setNewQuestionPayload(p => ({ ...p, lesson: e.target.value }));
+                              }}
+                              className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-amber-50 placeholder-gray-650 focus:outline-none focus:border-amber-500"
+                              required
+                            />
+                          ) : (
+                            <select
+                              value={newQuestionPayload.lesson}
+                              disabled={!newQuestionPayload.subject || isAddingCustomSubject}
+                              onChange={(e) => setNewQuestionPayload(p => ({ ...p, lesson: e.target.value }))}
+                              className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-gray-300 focus:outline-none focus:border-amber-505 cursor-pointer disabled:opacity-50"
+                              required
+                            >
+                              <option value="">-- Select Lesson --</option>
+                              {adminLessonsList.map((les, index) => (
+                                <option key={index} value={les}>{les}</option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+
+                      </div>
+
+                      {/* Marks and Year row input fields */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* Marks Selection counter */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-mono font-medium text-gray-450 block">Marks Evaluation Allocation</label>
+                          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 font-sans">
+                            {[1, 2, 3, 4, 5, 6].map((mk) => (
+                              <button
+                                type="button"
+                                key={mk}
+                                onClick={() => setNewQuestionPayload(p => ({ ...p, marks: mk }))}
+                                className={`py-2 text-xs font-mono font-bold rounded-sm border transition-all cursor-pointer ${
+                                  newQuestionPayload.marks === mk
+                                    ? 'bg-amber-500 border-amber-400 text-black shadow'
+                                    : 'bg-[#0d0d0d] hover:bg-[#111] border-[#222] text-gray-400 hover:text-amber-50'
+                                }`}
+                              >
+                                {mk}M
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Year select input dropdown/number input */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-mono font-medium text-gray-455 block">Syllabus Exam Year</label>
+                          <input
+                            type="number"
+                            min={2018}
+                            max={2030}
+                            value={newQuestionPayload.year}
+                            onChange={(e) => setNewQuestionPayload(p => ({ ...p, year: Number(e.target.value) }))}
+                            className="w-full bg-[#0d0d0d] border border-[#222] p-2.5 rounded-sm text-xs text-gray-250 font-mono focus:outline-none focus:border-amber-500"
+                            required
+                          />
+                        </div>
+
+                      </div>
+
+                      {/* Question Input Textarea */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-mono font-medium text-gray-455 block">Exam Question Text</label>
+                        <textarea
+                          rows={3}
+                          placeholder="Type the full exam prompt clearly including any values or directions..."
+                          value={newQuestionPayload.question}
+                          onChange={(e) => setNewQuestionPayload(p => ({ ...p, question: e.target.value }))}
+                          className="w-full bg-[#0d0d0d] border border-[#222] p-3 rounded-sm text-xs text-gray-255 focus:outline-none focus:border-amber-505 resize-y"
+                          required
+                        />
+                      </div>
+
+                      {/* Model Solution Input Textarea */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-mono font-medium text-gray-455 block">Official Model standard Answer / Key steps</label>
+                        <textarea
+                          rows={4}
+                          placeholder="Type step by step solution formulas, derivations or historical explanations. Use Enter for new lines..."
+                          value={newQuestionPayload.answer}
+                          onChange={(e) => setNewQuestionPayload(p => ({ ...p, answer: e.target.value }))}
+                          className="w-full bg-[#0d0d0d] border border-[#222] p-3 rounded-sm text-xs text-gray-300 focus:outline-none focus:border-amber-505 resize-y font-sans"
+                          required
+                        />
+                      </div>
+
+                      {/* Status elements messages */}
+                      {submitError && (
+                        <div className="p-3.5 bg-rose-950/25 border border-rose-900/50 text-rose-350 text-xs rounded-sm flex items-start gap-2.5">
+                          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{submitError}</span>
+                        </div>
+                      )}
+
+                      {submitSuccess && (
+                        <div className="p-3.5 bg-emerald-950/25 border border-emerald-900/50 text-emerald-300 text-xs rounded-sm flex items-start gap-2.5 animate-fadeIn">
+                          <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                          <span>{submitSuccess}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={isSubmittingQuestion}
+                        className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black rounded-sm text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer"
+                      >
+                        {isSubmittingQuestion ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                        <span>Record Question to Google Sheet</span>
+                      </button>
+
+                    </form>
+                  </div>
+
+                  {/* RIGHT COLUMN: PREVIEW */}
+                  <div className="lg:col-span-12 xl:col-span-5 space-y-4">
+                    <div className="bg-[#111] border border-[#222] rounded-sm p-4 flex items-center justify-between">
+                      <span className="text-xs font-mono font-semibold text-amber-500 uppercase tracking-widest flex items-center gap-1.5 animate-pulse">
+                        <Eye className="w-3.5 h-3.5" /> Real-time preview card
+                      </span>
+                      <span className="text-[10px] text-gray-500 font-mono">Mock Output layout</span>
+                    </div>
+
+                    {/* Display QuestionCard */}
+                    <QuestionCard 
+                      question={{
+                        id: 999,
+                        subject: isAddingCustomSubject ? (newSubject || 'Custom Subject') : (newQuestionPayload.subject || 'Mathematics'),
+                        lesson: isAddingCustomLesson ? (newLesson || 'Custom Lesson') : (newQuestionPayload.lesson || 'Trigonometry'),
+                        marks: Number(newQuestionPayload.marks),
+                        year: Number(newQuestionPayload.year),
+                        question: newQuestionPayload.question || 'This is where your exam question prompt text appears. Start typing on the left form to see it render.',
+                        answer: newQuestionPayload.answer || 'This is where your beautiful evaluation steps and explanation scheme answers render when revealed.',
+                        createdAt: new Date().toISOString()
+                      }}
+                      index={0}
+                    />
+                  </div>
+
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Elegant Footer */}
       <footer className="border-t border-[#222] bg-[#0c0c0c] py-6 px-4 md:px-6 text-center mt-12 text-gray-505 text-xs font-mono">
