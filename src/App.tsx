@@ -10,11 +10,11 @@ import {
   Layers, Download, PlusCircle, LogIn, LogOut, CheckCircle2, 
   X, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal, 
   HelpCircle, Sparkles, Plus, AlertCircle, FileSpreadsheet, Eye,
-  Edit3, Trash2, Check
+  Edit3, Trash2, Check, Home
 } from 'lucide-react';
 import { AppScriptService } from './services/api';
 import { Question, FilterState, AdminSession, NewQuestionPayload } from './types';
-import StatsDashboard from './components/StatsDashboard';
+import HeroSection from './components/HeroSection';
 import QuestionCard from './components/QuestionCard';
 import LatexRenderer from './components/LatexRenderer';
 
@@ -236,6 +236,23 @@ export default function App() {
     setAdminSession(null);
     localStorage.removeItem('hslc_hub_admin_session');
     setEditingQuestion(null);
+  };
+
+  // Home and Refresh Handlers
+  const handleHome = () => {
+    setFilters({
+      subject: 'all',
+      lesson: 'all',
+      sortField: 'year',
+      sortOrder: 'desc',
+      searchQuery: ''
+    });
+    setCurrentPage(1);
+    setExpandedRowId(null);
+  };
+
+  const handleRefresh = () => {
+    setConfigCounter(prev => prev + 1);
   };
 
   // Close and reset admin modal states
@@ -580,8 +597,28 @@ export default function App() {
           </div>
 
           {/* Quick Stats Summary / Indicators */}
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto justify-end">
             
+            {/* Navigation shortcuts (Home & Refresh) */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleHome}
+                className="p-1.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#222] hover:border-amber-500/20 text-gray-400 hover:text-amber-500 rounded-sm transition-all cursor-pointer flex items-center justify-center"
+                title="Home Portal / Reset Filters"
+              >
+                <Home className="w-3.5 h-3.5" />
+              </button>
+              
+              <button
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="p-1.5 bg-[#111] hover:bg-[#1a1a1a] border border-[#222] hover:border-amber-500/20 text-gray-400 hover:text-amber-500 rounded-sm transition-all cursor-pointer flex items-center justify-center disabled:opacity-50"
+                title="Refresh Question Bank"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
             {/* Status Pill */}
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#111] border border-[#222] rounded-sm text-xs">
               <span className={`w-2 h-2 rounded-full ${dbMode === 'live' ? 'bg-amber-500 animate-pulse' : 'bg-amber-300'}`} />
@@ -628,10 +665,12 @@ export default function App() {
       {/* Main Body */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
 
-        {/* Stats Dashboard */}
-        <StatsDashboard 
-          questions={questions} 
-          subjects={subjectsList} 
+        {/* Motivating Hero Section with Home/Refresh triggers */}
+        <HeroSection 
+          onHome={handleHome}
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          totalQuestions={questions.length}
         />
 
         {/* Question Explorer Header Section */}
