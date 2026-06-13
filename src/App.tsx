@@ -10,7 +10,7 @@ import {
   Layers, Download, PlusCircle, LogIn, LogOut, CheckCircle2, 
   X, RefreshCw, ChevronLeft, ChevronRight, SlidersHorizontal, 
   HelpCircle, Sparkles, Plus, AlertCircle, FileSpreadsheet, Eye,
-  Edit3, Trash2, Check, Home
+  Edit3, Trash2, Check, Home, Heart
 } from 'lucide-react';
 import { AppScriptService } from './services/api';
 import { Question, FilterState, AdminSession, NewQuestionPayload } from './types';
@@ -1736,10 +1736,26 @@ export default function App() {
       </AnimatePresence>
 
       {/* Elegant Footer */}
-      <footer className="border-t border-[#222] bg-[#0c0c0c] py-6 px-4 md:px-6 text-center mt-12 text-gray-505 text-xs font-mono">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span>© 2026 HSLC Mastery Hub. All learning resources secure.</span>
-          <div className="flex gap-4">
+      <footer className="border-t border-[#222] bg-[#0c0c0c] py-8 px-4 md:px-6 mt-12 text-gray-400 text-xs font-mono">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <span>© 2026 Simbenginfo. All rights reserved.</span>
+            <span className="text-[10px] text-gray-600">Empowering student success across standard curriculum frameworks.</span>
+          </div>
+          
+          {/* Donation widget */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 bg-[#111] border border-amber-500/10 hover:border-amber-500/20 px-4 py-2 rounded-sm transition-all shadow-lg">
+            <span className="flex items-center gap-1.5 text-amber-405 font-semibold uppercase tracking-wider text-[10px] text-amber-400">
+              <Heart className="w-3.5 h-3.5 fill-amber-500/10 text-amber-500 animate-pulse" /> Support Our Project
+            </span>
+            <span className="hidden sm:inline text-gray-700">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">UPI ID:</span>
+              <code className="bg-black border border-[#222] text-amber-100 px-2 py-0.5 rounded-sm select-all">thphillip@oksbi</code>
+            </div>
+          </div>
+
+          <div className="flex gap-4 text-gray-500">
             <span className="hover:text-amber-500 transition-colors cursor-pointer">Terms of Assessment</span>
             <span>•</span>
             <span className="hover:text-amber-500 transition-colors cursor-pointer">Model Curriculum Guidelines</span>
